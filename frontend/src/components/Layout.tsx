@@ -12,6 +12,7 @@ interface LayoutProps {
     onSearchChange: (term: string) => void;
     onNoteSelect: (note: Note) => void;
     onNewNote: () => void;
+    Load:boolean,
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -21,7 +22,8 @@ export const Layout: React.FC<LayoutProps> = ({
     searchTerm, 
     onSearchChange, 
     onNoteSelect, 
-    onNewNote 
+    onNewNote, 
+    Load
 }) => {
     return (
         <div className="flex h-screen bg-gray-100">
@@ -32,6 +34,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 onSearchChange={onSearchChange}
                 onNoteSelect={onNoteSelect}
                 onNewNote={onNewNote}
+                isLoading={Load}
             />
             <motion.div
                 className="flex-1 overflow-hidden"

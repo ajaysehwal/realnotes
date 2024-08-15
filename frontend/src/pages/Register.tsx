@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface FormState {
   email: string;
@@ -17,12 +18,15 @@ const Register: React.FC = () => {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register, user } = useAuth();
   const navigate = useNavigate();
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (
@@ -33,8 +37,19 @@ const Register: React.FC = () => {
       setError("Passwords do not match");
       return;
     }
-    register(formState.email, formState.password, setError);
+    setIsLoading(true);
+    setError(null);
+    try {
+      await register(formState.email, formState.password);
+    } catch (err) {
+      setError(
+        (err as Error).message || "An error occurred during registration."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   useEffect(() => {
     if (user) {
       navigate("/");
@@ -86,6 +101,7 @@ const Register: React.FC = () => {
               value={formState.email}
               onChange={handleInputChange}
               className="rounded-t-md"
+              disabled={isLoading}
             />
             <Input
               label="Password"
@@ -94,6 +110,7 @@ const Register: React.FC = () => {
               required
               value={formState.password}
               onChange={handleInputChange}
+              disabled={isLoading}
             />
             <Input
               label="Confirm Password"
@@ -103,6 +120,7 @@ const Register: React.FC = () => {
               value={formState.confirmPassword}
               onChange={handleInputChange}
               className="rounded-b-md"
+              disabled={isLoading}
             />
           </div>
 
@@ -110,8 +128,16 @@ const Register: React.FC = () => {
             <Button
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-105"
+              disabled={isLoading}
             >
-              Sign up
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing up...
+                </>
+              ) : (
+                "Sign up"
+              )}
             </Button>
           </div>
         </form>

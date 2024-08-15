@@ -4,9 +4,11 @@ import { Layout } from "../components/Layout";
 import { NoteEditor } from "../components/NoteEditor";
 import { Note } from "../types";
 import { useNotes } from "../hooks/useNotes";
+import UserAccount from "../components/Account";
+import { toast, ToastContainer } from "react-toastify";
 
 export const Notes: React.FC = () => {
-  const { notes, loading, error, addNote, updateNote, deleteNote, setNotes } =
+  const { notes, error, addNote, loading, updateNote, deleteNote, setNotes } =
     useNotes();
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,26 +23,26 @@ export const Notes: React.FC = () => {
       id: Date.now().toString(),
       title: "Untitled",
       content: "",
-      lastModified: new Date(),
+      updatedAt: Number(new Date()),
     };
     setNotes([newNote, ...notes]);
-    setSelectedNote(newNote);
     addNote(newNote);
+    setSelectedNote(newNote);
   };
-
-  const handleUpdateNote = async (id: string, updates: Partial<Note>) => {
-    await updateNote(id, { title: updates.title, content: updates.content });
+  const updateLocalState = (id: string, updates: Partial<Note>) => {
     const updatedNotes = notes.map((note) =>
-      note.id === id ? { ...note, ...updates, lastModified: new Date() } : note
+      note.id === id ? { ...note, ...updates } : note
     );
     setNotes(updatedNotes);
     if (selectedNote && selectedNote.id === id) {
       setSelectedNote({
         ...selectedNote,
         ...updates,
-        lastModified: new Date(),
       });
     }
+  };
+  const handleUpdateNote = async (id: string, updates: Partial<Note>) => {
+    await updateNote(id, { title: updates.title, content: updates.content });
   };
 
   const handleDeleteNote = async (id: string) => {
@@ -64,26 +66,44 @@ export const Notes: React.FC = () => {
     debouncedSearch(searchTerm);
   }, [searchTerm, notes]);
 
+  useEffect(() => {
+    if (error) {
+      toast.error(error, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  }, [error]);
   return (
-    <Layout
-      notes={filteredNotes}
-      selectedNoteId={selectedNote?.id || null}
-      searchTerm={searchTerm}
-      onSearchChange={setSearchTerm}
-      onNoteSelect={handleNoteSelect}
-      onNewNote={handleNewNote}
-    >
-      {selectedNote ? (
-        <NoteEditor
-          note={selectedNote}
-          onUpdate={handleUpdateNote}
-          onDelete={handleDeleteNote}
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          Select a note or create a new one
-        </div>
-      )}
-    </Layout>
+    <>
+      <Layout
+        notes={filteredNotes}
+        selectedNoteId={selectedNote?.id || null}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onNoteSelect={handleNoteSelect}
+        onNewNote={handleNewNote}
+        Load={loading}
+      >
+        {selectedNote ? (
+          <NoteEditor
+            note={selectedNote}
+            onUpdate={handleUpdateNote}
+            onDelete={handleDeleteNote}
+            onLocalUpdate={updateLocalState}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            Select a note or create a new one
+          </div>
+        )}
+      </Layout>
+      <UserAccount />
+      <ToastContainer />
+    </>
   );
 };

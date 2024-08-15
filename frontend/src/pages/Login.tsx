@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface FormState {
   email: string;
@@ -15,26 +16,37 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const { login, user } = useAuth();
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
     e.preventDefault();
-    login(formState.email, formState.password, setError);
+    setIsLoading(true);
+    setError(null);
+    try {
+      await login(formState.email, formState.password);
+    } catch (err) {
+      setError((err as Error).message || "An error occurred during login.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   useEffect(() => {
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-200 py-12 px-4 sm:px-6 lg:px-8">
@@ -53,7 +65,6 @@ const Login = () => {
           >
             Real <span className="text-blue-500 font-bold text-3xl">Notes</span>
           </motion.h1>
-          .
           <motion.h2
             className="mt-6 text-3xl font-extrabold text-gray-900"
             initial={{ opacity: 0 }}
@@ -82,6 +93,7 @@ const Login = () => {
               value={formState.email}
               onChange={handleInputChange}
               className="rounded-t-md"
+              disabled={isLoading}
             />
             <Input
               label="Password"
@@ -91,6 +103,7 @@ const Login = () => {
               value={formState.password}
               onChange={handleInputChange}
               className="rounded-b-md"
+              disabled={isLoading}
             />
           </div>
 
@@ -98,8 +111,16 @@ const Login = () => {
             <Button
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-105"
+              disabled={isLoading}
             >
-              Sign in
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </div>
         </form>

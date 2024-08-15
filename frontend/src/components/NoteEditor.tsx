@@ -2,29 +2,46 @@ import React from "react";
 import { motion } from "framer-motion";
 import { FaTrash } from "react-icons/fa";
 import { Note } from "../types";
+// import { debounce } from "lodash";
 
 interface NoteEditorProps {
   note: Note;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onDelete: (id: string) => void;
+  onLocalUpdate: (id: string, updates: Partial<Note>) => void;
 }
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({
   note,
   onUpdate,
   onDelete,
+  onLocalUpdate,
 }) => {
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
+    onLocalUpdate(note.id as string, {
+      title: newTitle,
+      content: note.content,
+    });
     if (note.title !== newTitle) {
-      onUpdate(note.id as string, { title: newTitle, content: note.content });
+      onUpdate(note.id as string, {
+        title: newTitle,
+        content: note.content,
+      });
     }
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
+    onLocalUpdate(note.id as string, {
+      title: note.title,
+      content: newContent,
+    });
     if (note.content !== newContent) {
-      onUpdate(note.id as string, { content: newContent, title: note.title });
+      onUpdate(note.id as string, {
+        title: note.title,
+        content: newContent,
+      });
     }
   };
 
@@ -61,7 +78,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         placeholder="Start typing your note here..."
       />
       <p className="text-xs text-gray-400 mt-4">
-        Last modified: {new Date(note.lastModified).toLocaleString()}
+        Last modified: {new Date(note.updatedAt as number).toLocaleString()}
       </p>
     </motion.div>
   );

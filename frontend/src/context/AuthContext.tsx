@@ -9,7 +9,6 @@ import axios, { AxiosInstance } from "axios";
 import Cookies from "js-cookie";
 import { User } from "../types";
 import { useNavigate } from "react-router-dom";
-import { getCookie } from "../utils/helper";
 
 interface AuthContextProps {
   user: User | null;
@@ -17,12 +16,10 @@ interface AuthContextProps {
   login: (
     email: string,
     password: string,
-    setError: React.Dispatch<React.SetStateAction<string | null>>
   ) => Promise<void>;
   register: (
     email: string,
     password: string,
-    setError: React.Dispatch<React.SetStateAction<string | null>>
   ) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
@@ -51,8 +48,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setLoading(false);
       }
     };
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        if (error.response.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          try {
+            await refreshToken();
+            return api(originalRequest);
+          } catch (refreshError) {
+            await logout();
+            return Promise.reject(refreshError);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
 
     initializeAuth();
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const fetchUserProfile = async () => {
@@ -61,7 +78,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const response = await api.get("/api/profile");
       setUser(response.data);
     } catch (error) {
-      console.error("Error fetching user profile:", error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -71,48 +87,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const handleAuth = async (
     endpoint: string,
     email: string,
-    password: string,
-    setError: React.Dispatch<React.SetStateAction<string | null>>
+    password: string
   ) => {
     try {
       await api.post(endpoint, { email, password });
       await fetchUserProfile();
-      setError(null);
       navigate("/");
     } catch (error) {
-      setError((error as Error).message);
+      throw error;
     }
   };
 
-  const login = (
-    email: string,
-    password: string,
-    setError: React.Dispatch<React.SetStateAction<string | null>>
-  ) => handleAuth("/api/login", email, password, setError);
-  const register = (
-    email: string,
-    password: string,
-    setError: React.Dispatch<React.SetStateAction<string | null>>
-  ) => handleAuth("/api/register", email, password, setError);
+  const login = (email: string, password: string) =>
+    handleAuth("/api/login", email, password);
+  const register = (email: string, password: string) =>
+    handleAuth("/api/register", email, password);
 
   const logout = async () => {
     try {
-      await api.post("/api/logout");
       setUser(null);
+      console.log("logging out ...........")
       Cookies.remove("_access_token");
       Cookies.remove("_refresh_token");
     } catch (error) {
-      console.error("Logout error:", error);
       throw error;
     }
   };
 
   const refreshToken = async () => {
     try {
-      const response = await api.post("/api/refresh-token");
-      Cookies.set("_access_token", response.data.accessToken);
+      await api.post("/api/refresh-token");
     } catch (error) {
-      console.error("Token refresh error:", error);
       throw error;
     }
   };
