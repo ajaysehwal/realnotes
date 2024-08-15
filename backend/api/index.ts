@@ -27,11 +27,11 @@ class App {
 
   private initializeMiddlewares() {
     this.app.use(compression());
-    this.app.use(helmet({ contentSecurityPolicy: false }));
+    this.app.use(helmet());
     this.app.use(
       rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 100,
+        max: 100000,
         message: "Too many requests, please try again later.",
       })
     );
@@ -40,7 +40,7 @@ class App {
     this.app.use(morgan("combined"));
     this.app.use(
       cors({
-        origin: "http://localhost:5173",
+        origin: [process.env.FRONTEND_URL as string, "http://localhost:5173"],
         methods: ["GET", "POST", "DELETE", "PUT"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
@@ -50,7 +50,7 @@ class App {
 
   private initializeRoutes() {
     this.app.get("/", (req: Request, res: Response) => {
-      res.status(200).json({ Health: "OK" });
+      res.status(200).json({ Health: "OK", Status: "running..",version:'v4' });
     });
     this.app.use("/api", authRoutes);
     this.app.use("/api/notes", noteRoutes);
@@ -90,20 +90,19 @@ class ClusterManager {
   }
 
   public start(appInstance: App) {
-    if (cluster.isPrimary && process.env.NODE_ENV === "production") {
-      console.log(`Primary ${process.pid} is running`);
+    // if (cluster.isPrimary && process.env.NODE_ENV === "production") {
+    //   console.log(`Primary ${process.pid} is running`);
 
-      for (let i = 0; i < this.numCPUs; i++) {
-        cluster.fork();
-      }
+    //   for (let i = 0; i < this.numCPUs; i++) {
+    //     cluster.fork();
+    //   }
 
-      cluster.on("exit", (worker) => {
-        console.log(`Worker ${worker.process.pid} died, restarting...`);
-        cluster.fork();
-      });
-    } else {
-      appInstance.startServer();
-    }
+    //   cluster.on("exit", (worker) => {
+    //     console.log(`Worker ${worker.process.pid} died, restarting...`);
+    //     cluster.fork();
+    //   });
+    // } else {
+    appInstance.startServer();
   }
 }
 

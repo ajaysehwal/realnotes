@@ -2,17 +2,17 @@ import { auth } from "./firebase";
 import { UserRecord } from "firebase-admin/auth";
 import axios from "axios";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 interface AuthToken {
   accessToken: string;
   refreshToken: string;
 }
 export class AuthService {
-  private static readonly API_KEY =
-    (process.env.FIREBASE_API_KEY as string) ||
-    "AIzaSyB8AhUEewIrdTiEtvwHsgsiMmCjt9Jpcyg";
+  private static readonly API_KEY = process.env.FIREBASE_API_KEY as string;
   private static readonly JWT_SECRET =
     process.env.JWT_SECRET || "qw2wqkw298dbx329h829";
-  private static readonly JWT_EXPIRATION = "15m"; 
+  private static readonly JWT_EXPIRATION = "15m";
   private static readonly REFRESH_TOKEN_EXPIRATION = "7d";
   static generateTokens(uid: string, email: string) {
     const accessToken = jwt.sign({ uid, email }, this.JWT_SECRET, {
