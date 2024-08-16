@@ -43,7 +43,7 @@ cd realnotes
  yarn install or npm run install
  yarn dev or npm run dev
 ```
-Now we will add the environment variables in the web/ and server/
+Now we will add the environment variables in the frontend/ and backend/
 
 ## Setup firebase console Steps
 - Log in to the Firebase Console
