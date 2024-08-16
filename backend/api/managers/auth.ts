@@ -24,7 +24,7 @@ class Auth {
       secure: process.env.NODE_ENV === "production",
       sameSite: "none",
       maxAge,
-      domain: DEFAULT_DOMAIN,
+      path: "/",
     };
   }
 
@@ -35,7 +35,7 @@ class Auth {
     res.cookie(
       REFRESH_TOKEN_NAME,
       refreshToken,
-      this.getCookieOptions(REFRESH_TOKEN_EXPIRY, true)
+      this.getCookieOptions(REFRESH_TOKEN_EXPIRY, false)
     );
     res.cookie(
       ACCESS_TOKEN_NAME,
@@ -58,7 +58,10 @@ class Auth {
       const { email, password } = req.body;
       const tokens = await AuthService.register(email, password);
       Auth.setCookies(res, tokens);
-      res.status(201).json({ accessToken: tokens.accessToken });
+      res.status(201).json({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
     } catch (error) {
       Auth.handleError(next, error);
     }
@@ -73,7 +76,10 @@ class Auth {
       const { email, password } = req.body;
       const tokens = await AuthService.login(email, password);
       Auth.setCookies(res, tokens);
-      res.status(200).json({ accessToken: tokens.accessToken });
+      res.status(200).json({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
     } catch (error) {
       Auth.handleError(next, error);
     }
@@ -110,7 +116,10 @@ class Auth {
       }
       const tokens = await AuthService.refreshToken(token);
       Auth.setCookies(res, tokens);
-      res.json({ accessToken: tokens.accessToken });
+      res.json({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
     } catch (error) {
       Auth.handleError(next, error);
     }

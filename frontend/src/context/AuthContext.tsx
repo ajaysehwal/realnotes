@@ -9,20 +9,15 @@ import axios, { AxiosInstance } from "axios";
 import Cookies from "js-cookie";
 import { User } from "../types";
 import { useNavigate } from "react-router-dom";
+import { setCookie } from "../utils/helper";
 
 interface AuthContextProps {
   user: User | null;
   loading: boolean;
-  login: (
-    email: string,
-    password: string,
-  ) => Promise<void>;
-  register: (
-    email: string,
-    password: string,
-  ) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -32,6 +27,15 @@ const api: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
+const isTokenExpired = (token: string): boolean => {
+  if (!token) return true;
+  const payloadBase64 = token.split(".")[1];
+  const decodedJson = atob(payloadBase64);
+  const decoded = JSON.parse(decodedJson);
+  const exp = decoded.exp;
+  return Date.now() >= exp * 1000;
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -39,23 +43,67 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const token = Cookies.get("_access_token");
-      if (token) {
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/api/profile");
+      setUser(response.data);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        setUser(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refresh = async () => {
+    console.log("Refreshing token...");
+    try {
+      const response = await api.post("/api/refresh-token");
+      const { refreshToken, accessToken } = response.data;
+      setCookie(refreshToken, accessToken);
+    } catch (error) {
+      console.error("Failed to refresh token:", error);
+      throw error;
+    }
+  };
+
+  const initializeAuth = async () => {
+    const accessToken = Cookies.get("_access_token");
+    const refreshToken = Cookies.get("_refresh_token");
+    console.log(accessToken);
+    console.log(refreshToken);
+    console.log(!isTokenExpired(accessToken as string))
+    if (accessToken && !isTokenExpired(accessToken)) {
+      await fetchUserProfile();
+    } else if (refreshToken) {
+      try {
+        await refresh();
         await fetchUserProfile();
-      } else {
+      } catch (error) {
+        console.error("Failed to refresh token during initialization:", error);
         setLoading(false);
       }
-    };
+    } else {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (
+          (error.response?.status === 401 ||
+            isTokenExpired(Cookies.get("_access_token") || "")) &&
+          !originalRequest._retry
+        ) {
           originalRequest._retry = true;
           try {
-            await refreshToken();
+            await refresh();
             return api(originalRequest);
           } catch (refreshError) {
             await logout();
@@ -67,22 +115,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     );
 
     initializeAuth();
+
     return () => {
       api.interceptors.response.eject(interceptor);
     };
   }, []);
-
-  const fetchUserProfile = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("/api/profile");
-      setUser(response.data);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAuth = async (
     endpoint: string,
@@ -90,10 +127,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     password: string
   ) => {
     try {
-      await api.post(endpoint, { email, password });
+      const response = await api.post(endpoint, { email, password });
+      const { refreshToken, accessToken } = response.data;
+      console.log(response.data);
+      setCookie(refreshToken, accessToken);
       await fetchUserProfile();
       navigate("/");
     } catch (error) {
+      console.error(`Error during ${endpoint}:`, error);
       throw error;
     }
   };
@@ -105,20 +146,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = async () => {
     try {
+      await api.post("/api/logout");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
       setUser(null);
-      console.log("logging out ...........")
       Cookies.remove("_access_token");
       Cookies.remove("_refresh_token");
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const refreshToken = async () => {
-    try {
-      await api.post("/api/refresh-token");
-    } catch (error) {
-      throw error;
+      console.log("Logged out successfully");
     }
   };
 
@@ -128,7 +163,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     login,
     register,
     logout,
-    refreshToken,
+    refresh,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

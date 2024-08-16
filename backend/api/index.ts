@@ -40,7 +40,7 @@ class App {
     this.app.use(morgan("combined"));
     this.app.use(
       cors({
-        origin: [process.env.FRONTEND_URL as string, "http://localhost:5173"],
+        origin: [process.env.FRONTEND_URL as string,'http://localhost:5173'],
         methods: ["GET", "POST", "DELETE", "PUT"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
@@ -50,7 +50,7 @@ class App {
 
   private initializeRoutes() {
     this.app.get("/", (req: Request, res: Response) => {
-      res.status(200).json({ Health: "OK", Status: "running..",version:'v4' });
+      res.status(200).json({ Health: "OK", Status: "running..",version:'v10' });
     });
     this.app.use("/api", authRoutes);
     this.app.use("/api/notes", noteRoutes);
