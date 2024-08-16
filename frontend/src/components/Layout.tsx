@@ -7,7 +7,7 @@ import { Note } from '../types';
 interface LayoutProps {
     children: React.ReactNode;
     notes: Note[];
-    selectedNoteId: string | null;
+    selectedNoteId: string;
     searchTerm: string;
     onSearchChange: (term: string) => void;
     onNoteSelect: (note: Note) => void;

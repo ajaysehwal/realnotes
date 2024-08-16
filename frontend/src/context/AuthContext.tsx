@@ -73,9 +73,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const initializeAuth = async () => {
     const accessToken = Cookies.get("_access_token");
     const refreshToken = Cookies.get("_refresh_token");
-    console.log(accessToken);
-    console.log(refreshToken);
-    console.log(!isTokenExpired(accessToken as string))
     if (accessToken && !isTokenExpired(accessToken)) {
       await fetchUserProfile();
     } else if (refreshToken) {
@@ -129,7 +126,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const response = await api.post(endpoint, { email, password });
       const { refreshToken, accessToken } = response.data;
-      console.log(response.data);
       setCookie(refreshToken, accessToken);
       await fetchUserProfile();
       navigate("/");

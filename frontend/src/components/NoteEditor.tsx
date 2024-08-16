@@ -24,10 +24,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       content: note.content,
     });
     if (note.title !== newTitle) {
-      onUpdate(note.id as string, {
-        title: newTitle,
-        content: note.content,
-      });
+      setTimeout(() => {
+        onUpdate(note.id as string, {
+          title: newTitle,
+          content: note.content,
+        });
+      }, 2000);
     }
   };
 
@@ -38,10 +40,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       content: newContent,
     });
     if (note.content !== newContent) {
-      onUpdate(note.id as string, {
-        title: note.title,
-        content: newContent,
-      });
+      setTimeout(() => {
+        onUpdate(note.id as string, {
+          title: note.title,
+          content: newContent,
+        });
+      }, 2000);
     }
   };
 

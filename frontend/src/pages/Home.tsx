@@ -8,9 +8,17 @@ import UserAccount from "../components/Account";
 import { toast, ToastContainer } from "react-toastify";
 
 export const Notes: React.FC = () => {
-  const { notes, error, addNote, loading, updateNote, deleteNote, setNotes } =
-    useNotes();
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const {
+    notes,
+    error,
+    addNote,
+    loading,
+    updateNote,
+    deleteNote,
+    setNotes,
+    setSelectedNote,
+    selectedNote,
+  } = useNotes();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNotes, setFilteredNotes] = useState<Note[]>(notes);
 
@@ -19,15 +27,11 @@ export const Notes: React.FC = () => {
     setFilteredNotes(notes);
   }, [notes]);
   const handleNewNote = () => {
-    const newNote: Note = {
-      id: Date.now().toString(),
+    const newNote = {
       title: "Untitled",
       content: "",
-      updatedAt: Number(new Date()),
     };
-    setNotes([newNote, ...notes]);
     addNote(newNote);
-    setSelectedNote(newNote);
   };
   const updateLocalState = (id: string, updates: Partial<Note>) => {
     const updatedNotes = notes.map((note) =>
@@ -82,7 +86,7 @@ export const Notes: React.FC = () => {
     <>
       <Layout
         notes={filteredNotes}
-        selectedNoteId={selectedNote?.id || null}
+        selectedNoteId={selectedNote?.id as string}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onNoteSelect={handleNoteSelect}

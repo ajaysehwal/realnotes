@@ -13,7 +13,7 @@ import { useNotes } from "../hooks/useNotes";
 
 interface SidebarProps {
   notes: Note[];
-  selectedNoteId: string | null;
+  selectedNoteId: string;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onNoteSelect: (note: Note) => void;

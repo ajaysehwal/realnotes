@@ -13,12 +13,15 @@ interface UseNotesResult {
   deleteNote: (id: string) => Promise<void>;
   refreshNotes: () => Promise<void>;
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+  selectedNote:Note | null,
+  setSelectedNote: (note: Note | null) => void,
 }
 
 export const useNotes = (): UseNotesResult => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   const handleError = useCallback((message: string) => {
     setError(message);
@@ -45,7 +48,9 @@ export const useNotes = (): UseNotesResult => {
   const addNote = useCallback(
     async (note: Omit<Note, "id" | "userId" | "createdAt" | "updatedAt">) => {
       try {
-        await api.post("/api/notes", note);
+        const response = await api.post("/api/notes", note);
+        setNotes((prev) => [...prev, response.data]);
+        setSelectedNote(response.data);
       } catch (err) {
         handleError("Failed to add note");
       }
@@ -85,5 +90,7 @@ export const useNotes = (): UseNotesResult => {
     deleteNote,
     refreshNotes,
     setNotes,
+    selectedNote,
+    setSelectedNote,
   };
 };
